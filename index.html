@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=1024, user-scalable=no">
+
+  <title>Your deck.js Presentation</title>
+
+  <!-- Required stylesheet -->
+  <link rel="stylesheet" media="screen" href="deck.js-latest/core/deck.core.css">
+
+  <!-- Extension CSS files go here. Remove or add as needed. -->
+  <link rel="stylesheet" media="screen" href="deck.js-latest/extensions/goto/deck.goto.css">
+  <link rel="stylesheet" media="screen" href="deck.js-latest/extensions/menu/deck.menu.css">
+  <link rel="stylesheet" media="screen" href="deck.js-latest/extensions/navigation/deck.navigation.css">
+  <link rel="stylesheet" media="screen" href="deck.js-latest/extensions/status/deck.status.css">
+  <link rel="stylesheet" media="screen" href="deck.js-latest/extensions/scale/deck.scale.css">
+
+  <!-- Style theme. More available in /themes/style/ or create your own. -->
+  <link rel="stylesheet" media="screen" href="deck.js-latest/themes/style/web-2.0.css">
+
+  <!-- Transition theme. More available in /themes/transition/ or create your own. -->
+  <link rel="stylesheet" media="screen" href="deck.js-latest/themes/transition/horizontal-slide.css">
+
+  <!-- Basic black and white print styles -->
+  <link rel="stylesheet" media="print" href="deck.js-latest/core/print.css">
+
+  <!-- Required Modernizr file -->
+  <script src="deck.js-latest/modernizr.custom.js"></script>
+</head>
+<body>
+  <div class="deck-container">
+
+    <!-- Begin slides. Just make elements with a class of slide. -->
+
+    <section class="slide">
+      <h1>Vagrant and Chef</h1>
+    </section>
+
+    <section class="slide">
+      <h2>What is Vagrant?</h2>
+    </section>
+
+    <section class="slide">
+      <h2>What is Chef?</h2>
+    </section>
+
+    <section class="slide">
+      <h2>Why should you care?</h2>
+
+      <p>
+        Maintaining systems is hard. Even if we create detailed documentation, we can't
+        be certain that operator error won't cause issues down the road. By codifying
+        our environment, we can be sure that things get configured correctly every time.
+      </p>
+    </section>
+
+    <section class="slide">
+      <h2>The Vagrantfile</h2>
+
+      <p>A typical Vagrantfile we use looks like:</p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        Vagrant.configure(2) do |config|
+          config.vm.box = 'chef/ubuntu-14.04'
+
+          config.omnibus.chef_version = :latest
+
+          config.vm.define 'dev' do |node|
+            node.vm.hostname = 'my-app.dev'
+            node.vm.network 'private_network', ip: '192.168.200.50'
+            node.vm.synced_folder './', '/var/www/my-app/current'
+
+            node.vm.provision 'chef_solo' do |chef|
+              chef.add_recipe 'my-app::development'
+            end
+          end
+        end
+      </script>
+
+      <p>The official docs are pretty good, and include plenty of examples.</p>
+      <a href="https://docs.vagrantup.com/v2/">Vagrant Docs</a>
+    </section>
+
+    <section class="slide">
+      <h2>Your First Cookbook</h2>
+
+      <p>
+        The ChefDK includes all the utilities you'll need to write and run your own cookbooks.
+        We can use the 'chef' tool to generate a cookbook:
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: shell">
+        $ chef generate cookbook my-app
+        Compiling Cookbooks...
+        Recipe: code_generator::cookbook
+          * directory[/Users/adamkrone/Projects/github/adamkrone/vagrant-chef-presentation/cookbooks/my-app] action create
+            - create new directory /Users/adamkrone/Projects/github/adamkrone/vagrant-chef-presentation/cookbooks/my-app
+          * template[/Users/adamkrone/Projects/github/adamkrone/vagrant-chef-presentation/cookbooks/my-app/metadata.rb] action create_if_missing
+            - create new file /Users/adamkrone/Projects/github/adamkrone/vagrant-chef-presentation/cookbooks/my-app/metadata.rb
+            - update content in file /Users/adamkrone/Projects/github/adamkrone/vagrant-chef-presentation/cookbooks/my-app/metadata.rb from none to 2973ef
+            (diff output suppressed by config)
+          * template[/Users/adamkrone/Projects/github/adamkrone/vagrant-chef-presentation/cookbooks/my-app/README.md] action create_if_missing
+            - create new file /Users/adamkrone/Projects/github/adamkrone/vagrant-chef-presentation/cookbooks/my-app/README.md
+            - update content in file /Users/adamkrone/Projects/github/adamkrone/vagrant-chef-presentation/cookbooks/my-app/README.md from none to 0645e5
+            (diff output suppressed by config)
+          * cookbook_file[/Users/adamkrone/Projects/github/adamkrone/vagrant-chef-presentation/cookbooks/my-app/chefignore] action create
+            - create new file /Users/adamkrone/Projects/github/adamkrone/vagrant-chef-presentation/cookbooks/my-app/chefignore
+            - update content in file /Users/adamkrone/Projects/github/adamkrone/vagrant-chef-presentation/cookbooks/my-app/chefignore from none to 9727b1
+            (diff output suppressed by config)
+          ...snipped...
+      </script>
+
+      <p>This creates all the basic files we'll need to start developing our cookbook.</p>
+    </section>
+
+    <section class="slide">
+      <h2>Introducing Test Kitchen</h2>
+
+      <p>
+        When using the ChefDK generator, it creates a basic Test Kitchen configuration.
+        We can use this to run our cookbook during development to make sure it's working.
+      </p>
+
+      <p>
+        Later, we'll also take a look at how we can use Test Kitchen to automate testing
+        of our cookbooks.
+      </p>
+    </section>
+
+    <section class="slide">
+      <h2>Writing a Recipe</h2>
+
+      <p>
+        Chef recipes are written in Ruby, but normally rely heavily on Chef Resources.
+        Resources are statements of configuration that perform actions to bring your
+        system to a desired state.
+      </p>
+
+      <p>
+        For example, we might want to install the Apache web server:
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        package 'apache2'
+      </script>
+    </section>
+
+    <section class="slide">
+      <h2>Creating Files</h2>
+
+      <p>
+        There are a couple of ways to create files. The simplest is just to copy a file
+        from the cookbook onto the system we're provisioning.
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        file 'my-file.txt' do
+          owner 'root'
+          group 'root'
+          action :create
+        end
+      </script>
+
+      <p>We can also fetch remote files:</p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        remote_file 'my-file.txt' do
+          source 'http://example.com/my-file.txt'
+          owner 'root'
+          group 'root'
+          action :create_if_missing
+        end
+      </script>
+    </section>
+
+    <section class="slide">
+      <h2>Idempotency</h2>
+    </section>
+
+    <section class="slide">
+      <h2>Creating Files from Templates</h2>
+
+      <p>
+        If we want to create files that are flexible, we can use templates and pass
+        in variables for better code re-use.
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        template 'my-file.txt' do
+          source 'http://example.com/my-file.txt'
+          owner 'root'
+          group 'root'
+          action :create_if_missing
+        end
+      </script>
+    </section>
+
+    <section class="slide">
+      <h2>Using Other Cookbooks</h2>
+
+      <p>
+        Up until now, we've just been doing everything ourselves. Instead, we can rely
+        on the cookbooks others have created.
+      </p>
+    </section>
+
+    <section class="slide">
+      <h2>Testing Your Cookbook</h2>
+    </section>
+
+    <section class="slide">
+      <h2>Writing a ServerSpec Test</h2>
+    </section>
+
+    <section class="slide">
+      <h2>Putting it all Together</h2>
+    </section>
+
+    <!-- End slides. -->
+
+    <!-- Begin extension snippets. Add or remove as needed. -->
+
+    <!-- deck.navigation snippet -->
+    <div aria-role="navigation">
+      <a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
+      <a href="#" class="deck-next-link" title="Next">&#8594;</a>
+    </div>
+
+    <!-- deck.status snippet -->
+    <p class="deck-status" aria-role="status">
+      <span class="deck-status-current"></span>
+      /
+      <span class="deck-status-total"></span>
+    </p>
+
+    <!-- deck.goto snippet -->
+    <form action="." method="get" class="goto-form">
+      <label for="goto-slide">Go to slide:</label>
+      <input type="text" name="slidenum" id="goto-slide" list="goto-datalist">
+      <datalist id="goto-datalist"></datalist>
+      <input type="submit" value="Go">
+    </form>
+
+    <!-- End extension snippets. -->
+  </div>
+
+<!-- Required JS files. -->
+<script src="deck.js-latest/jquery.min.js"></script>
+<script src="deck.js-latest/core/deck.core.js"></script>
+
+<!-- Extension JS files. Add or remove as needed. -->
+<script src="deck.js-latest/extensions/menu/deck.menu.js"></script>
+<script src="deck.js-latest/extensions/goto/deck.goto.js"></script>
+<script src="deck.js-latest/extensions/status/deck.status.js"></script>
+<script src="deck.js-latest/extensions/navigation/deck.navigation.js"></script>
+<script src="deck.js-latest/extensions/scale/deck.scale.js"></script>
+<script src="deck.js-latest/extensions/syntaxhighlighter/deck.syntaxhighlighter.js"></script>
+
+<!-- Initialize the deck. You can put this in an external file if desired. -->
+<script>
+  $(function() {
+    $.deck('.slide');
+  });
+</script>
+</body>
+</html>
