@@ -18,7 +18,7 @@
   <link rel="stylesheet" media="screen" href="deck.js-latest/extensions/scale/deck.scale.css">
 
   <!-- Style theme. More available in /themes/style/ or create your own. -->
-  <link rel="stylesheet" media="screen" href="deck.js-latest/themes/style/web-2.0.css">
+  <link rel="stylesheet" media="screen" href="deck.js-latest/themes/style/swiss.css">
 
   <!-- Transition theme. More available in /themes/transition/ or create your own. -->
   <link rel="stylesheet" media="screen" href="deck.js-latest/themes/transition/horizontal-slide.css">
@@ -40,15 +40,36 @@
 
     <section class="slide">
       <h2>What is Vagrant?</h2>
+
+      <p>
+        Vagrant is tool that allows you to define virtual machine configuration. It supports
+        a number of targets, the most common of which is VirtualBox.
+      </p>
+
+      <p>
+        To create a new Vagrant configuration:
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: shell">
+        $ vagrant init chef/ubuntu-14.04
+      </script>
+
+      <p>
+        'chef/ubuntu-14.04' is a base box. Base boxes define a base installation of an
+        operating system. This allows you to always start from a known-good configuration
+        of our system.
+      </p>
     </section>
 
     <section class="slide">
       <h2>What is Chef?</h2>
-    </section>
 
-    <section class="slide">
-      <h2>Why should you care?</h2>
+      <p>
+        Chef is a configuration management tool written in Ruby. It allows you to define
+        your system's configuration as code.
+      </p>
 
+      <h3>Why is this important?</h3>
       <p>
         Maintaining systems is hard. Even if we create detailed documentation, we can't
         be certain that operator error won't cause issues down the road. By codifying
@@ -59,7 +80,7 @@
     <section class="slide">
       <h2>The Vagrantfile</h2>
 
-      <p>A typical Vagrantfile we use looks like:</p>
+      <p>A typical Vagrantfile looks like this:</p>
 
       <script type="syntaxhighlighter" class="brush: ruby">
         Vagrant.configure(2) do |config|
@@ -78,6 +99,11 @@
           end
         end
       </script>
+
+      <p>
+        You can use a Vagrantfile to define many virtual machines, and spin up
+        entire clusters. Most configurations, however, are much simpler.
+      </p>
 
       <p>The official docs are pretty good, and include plenty of examples.</p>
       <a href="https://docs.vagrantup.com/v2/">Vagrant Docs</a>
@@ -123,6 +149,11 @@
         We can use this to run our cookbook during development to make sure it's working.
       </p>
 
+      <script type="syntaxhighlighter" class="brush: shell">
+        $ kitchen converge
+        $ kitchen login
+      </script>
+
       <p>
         Later, we'll also take a look at how we can use Test Kitchen to automate testing
         of our cookbooks.
@@ -135,15 +166,27 @@
       <p>
         Chef recipes are written in Ruby, but normally rely heavily on Chef Resources.
         Resources are statements of configuration that perform actions to bring your
-        system to a desired state.
+        system to a desired state. Resources abstract the implementation and allow you
+        to focus on a few key details.
       </p>
 
       <p>
-        For example, we might want to install the Apache web server:
+        For example, we might want to install the Apache web server package:
       </p>
 
       <script type="syntaxhighlighter" class="brush: ruby">
         package 'apache2'
+      </script>
+
+      <p>
+        We would also probably want to enable the apache2 service, and make sure it's
+        started:
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        service 'apache2' do
+          action [:enable, :start]
+        end
       </script>
     </section>
 
@@ -151,23 +194,36 @@
       <h2>Creating Files</h2>
 
       <p>
-        There are a couple of ways to create files. The simplest is just to copy a file
-        from the cookbook onto the system we're provisioning.
+        There are a couple of ways to create files. The simplest is to create a file
+        with some content.
       </p>
 
       <script type="syntaxhighlighter" class="brush: ruby">
-        file 'my-file.txt' do
-          owner 'root'
-          group 'root'
+        file '/var/www/html/index.html' do
+          content '<h1>Vagrant and Chef</h1>'
           action :create
         end
       </script>
 
+      <p>
+        A more useful method is to copy a file from the cookbook onto the system
+        we're provisioning.
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        cookbook_file 'index.html'
+          path '/var/www/html/index.html'
+          action :create
+        end
+      </script>
+
+      <p>In this case, index.html exists in a files directory at the root of the cookbook.</p>
+
       <p>We can also fetch remote files:</p>
 
       <script type="syntaxhighlighter" class="brush: ruby">
-        remote_file 'my-file.txt' do
-          source 'http://example.com/my-file.txt'
+        remote_file '/var/www/html/index.html' do
+          source 'http://example.com/index.html'
           owner 'root'
           group 'root'
           action :create_if_missing
@@ -176,7 +232,21 @@
     </section>
 
     <section class="slide">
-      <h2>Idempotency</h2>
+      <h2>Idempotence</h2>
+
+      <p>
+        In the last example, you may have noticed that we used the :create_if_missing
+        action. This is an important concept in configuration management tools called
+        idempotence.
+      </p>
+
+      <blockquote cite="http://en.wikipedia.org/wiki/Idempotence">
+        <p>
+          <strong>Idempotence</strong> is the property of certain operations in mathematics
+          and computer science, that can be applied multiple times without changing the
+          result beyond the initial application
+        </p>
+      </blockquote>
     </section>
 
     <section class="slide">
@@ -188,13 +258,45 @@
       </p>
 
       <script type="syntaxhighlighter" class="brush: ruby">
-        template 'my-file.txt' do
-          source 'http://example.com/my-file.txt'
-          owner 'root'
-          group 'root'
-          action :create_if_missing
+        template '/var/www/html/index.html' do
+          source 'index.html.erb'
+          variables(title: 'Vagrant and Chef')
+          action :create
         end
       </script>
+
+      <p>Templates use ERB and might look like this:</p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        <h1><%= @title %></h1>
+
+        <p>Elit impedit ullam ratione accusantium fugit dignissimos. Quia tempora dicta
+        assumenda iusto labore. Maxime dolorum impedit ratione quisquam maiores expedita.
+        Quisquam fuga aut nisi reiciendis perspiciatis harum! Temporibus ullam nemo.</p>
+      </script>
+    </section>
+
+    <section class="slide">
+      <h2>Flexible Cookbooks Using Attributes</h2>
+
+      <p>
+        Chef uses attributes as a way to maximize cookbook reuse. Chances are you will want
+        to configure a number of servers with the same software, but with slightly different
+        configuration. By using templates and attributes you can make any cookbook more
+        flexible.
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        template '/var/www/html/index.html' do
+          source 'index.html.erb'
+          variables(title: node['my_app']['title'])
+          action :create
+        end
+      </script>
+
+      <p>
+        Here we have updated the index.html template to use an attribute for its title.
+      </p>
     </section>
 
     <section class="slide">
@@ -204,18 +306,112 @@
         Up until now, we've just been doing everything ourselves. Instead, we can rely
         on the cookbooks others have created.
       </p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        include_recipe 'apache2::default'
+      </script>
+
+      <p>
+        When you include recipes, the cookbook and recipe is separated by '::'. In this
+        case, we're including the apache2 cookbook's default recipe.
+      </p>
+    </section>
+
+    <section class="slide">
+      <h2>Berkshelf</h2>
+
+      <p>
+        Before we can use other cookbooks, we need a way to manage where we get them.
+        We can always download the cookbooks and include them in the repo, but there
+        is another tool that handles that for us.
+      </p>
+
+      <p>
+        Berkshelf allows us to specify our cookbook dependencies in a Berksfile:
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        source "https://supermarket.chef.io"
+
+        cookbook 'apache2'
+      </script>
     </section>
 
     <section class="slide">
       <h2>Testing Your Cookbook</h2>
+
+      <p>
+        The more complicated our cookbook becomes, the more valuable it will be to have
+        automated testing. That way, anytime we make a change, we can be reasonably sure
+        that we haven't broken anything.
+      </p>
+
+      <p>
+        Test Kitchen allows us to organize tests in 'suites' that can be run across multiple
+        operating systems and configurations. We'll be using a single suite written in
+        ServerSpec to test our cookbook.
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        suites:
+          - name: default
+            run_list:
+              - recipe[my-app::default]
+            attributes:
+              my_app:
+                title: Vagrant and Chef
+      </script>
     </section>
 
     <section class="slide">
       <h2>Writing a ServerSpec Test</h2>
+
+      <p>
+        If you've used RSpec before, ServerSpec will be familiar, as it's an extension of RSpec.
+        Here's a basic test for our cookbook.
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: ruby">
+        require 'spec_helper'
+
+        describe 'my-app::default' do
+          describe package('apache2') do
+            it { should be_installed }
+          end
+
+          describe service('apache2') do
+            it { should be_enabled }
+            it { should be_running }
+          end
+
+          describe file('/var/www/html/index.html') do
+            it { should be_file }
+            it { should contain 'Vagrant and Chef' }
+          end
+        end
+      </script>
+
+      <p>
+        We could add another test that makes sure our index.html file is written. Now, whenever we
+        want to see if our cookbook is working, we can run:
+      </p>
+
+      <script type="syntaxhighlighter" class="brush: shell">
+        $ kitchen test
+      </script>
     </section>
 
     <section class="slide">
       <h2>Putting it all Together</h2>
+
+      <p>
+        As you can see, Chef is a very powerful tool, and when used along with Vagrant and Test Kitchen,
+        you can automate any infrastructure. It's easy to get overwhelmed with all the concepts, and
+        Chef has more advanced topics to learn. The important thing is to start small and build your
+        cookbooks as you progress.
+      </p>
+
+      <p>Automating even a few small things here and there can have huge wins.</p>
     </section>
 
     <!-- End slides. -->
